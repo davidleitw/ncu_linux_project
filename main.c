@@ -12,6 +12,16 @@ int a;
 int b = 48763;
 int *ptr;
 
+char msg[][150] = {
+    "code segment: void *child_thread_information(void *data) address",
+    "bss segment: int a, a global varibale without initialization",
+    "data segment: int b = 48763, a global variable with initialization",
+    "heap segment: int *ptr = malloc(10 * sizeof(int)), a pointer malloc in main function",
+    "lib: printf function address",
+    "data segment: static int si, a static variable in thread function",
+    "stack segment: static __thread int sti, a static __thread variable in thread function"
+    "thread local storages: int idx, a variable in thread function"
+};
 
 struct segment {
     unsigned long start_code, end_code, start_data, end_data;
