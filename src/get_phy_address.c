@@ -52,7 +52,7 @@ asmlinkage int get_phy_address(unsigned long *vir_addrs, int vir_addr_len,
         laddr = page_address(_page);
         phy_address[i] = virt_to_phys(laddr) | (address & ~PAGE_MASK);
         
-        printk("vir_address %lx ---> phy_address %lx", address, phy_address[i]);
+        printk("thread_pid %d: vir_address %lx ---> phy_address %lx", current->pid, address, phy_address[i]);
     }
 
     if (copy_to_user(phy_addrs, phy_address, phy_addr_len * sizeof(unsigned long)) != 0) {
