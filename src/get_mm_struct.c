@@ -28,11 +28,8 @@ asmlinkage int get_mm_struct_info(pid_t pid, void *__user user_address)
                 .env_start = task->mm->env_start,
                 .env_end = task->mm->env_end  
             };
-
             copy_to_user(user_address, &seg, sizeof(struct segment));
-            return 0;
         }
     }
     return -1;
 }
-

@@ -52,7 +52,7 @@ void *child_thread_information(void *data) {
 
     int err = syscall(335, vir_addr, 8, phy_addr, 8);
     if (err < 0) {
-        printf("System call no.335 error!\n");
+        printf("System call no.335 error, error code = %d!\n", err);
         pthread_exit(NULL);
     }
 
