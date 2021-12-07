@@ -12,14 +12,14 @@ int a;
 int b = 48763;
 int *ptr;
 
-char msg[][150] = {
+char msg[][250] = {
     "code segment: void *child_thread_information(void *data) address",
     "bss segment: int a, a global varibale without initialization",
     "data segment: int b = 48763, a global variable with initialization",
     "heap segment: int *ptr = malloc(10 * sizeof(int)), a pointer malloc in main function",
     "lib: printf function address",
     "data segment: static int si, a static variable in thread function",
-    "stack segment: static __thread int sti, a static __thread variable in thread function"
+    "stack segment: static __thread int sti, a static __thread variable in thread function",
     "thread local storages: int idx, a variable in thread function"
 };
 
@@ -52,7 +52,7 @@ void *child_thread_information(void *data) {
 
     int err = syscall(335, vir_addr, 8, phy_addr, 8);
     if (err < 0) {
-        printf("System call no.335 error, error code = %d!\n", err);
+        printf("System call no.335 error, error code = %d\n", err);
         pthread_exit(NULL);
     }
 
@@ -68,9 +68,12 @@ void *child_thread_information(void *data) {
 }
 
 int main() {
+    ptr = (int*)malloc(10 * sizeof(int));
+
     struct segment seg;
     syscall(334, getpid(), &seg);
-    
+
+    printf("pid = %d\n", getpid());    
     pthread_attr_t thread_attr;
     pthread_t t1, t2, t3;
 
@@ -79,8 +82,7 @@ int main() {
     pthread_create(&t2, NULL, child_thread_information, "2");
     sleep(1);
     pthread_create(&t3, NULL, child_thread_information, "3");
-    sleep(1);
-
+    
     void *t1_stack_addr, *t2_stack_addr, *t3_stack_addr;
     size_t t1_stack_size = 0, t2_stack_size = 0, t3_stack_size = 0;
 
@@ -93,9 +95,10 @@ int main() {
     pthread_getattr_np(t3, &thread_attr);
     pthread_attr_getstack(&thread_attr, &t3_stack_addr, &t3_stack_size);
 
-
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
     pthread_join(t3, NULL);
+    
+    getchar();
     return 0;
 }

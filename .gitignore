@@ -1,2 +1,4 @@
 /.vscode
 main
+test
+syscall_add.sh
