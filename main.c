@@ -7,6 +7,7 @@
 // get the first address of initialized data segment
 // ref: https://stackoverflow.com/questions/33493600/how-to-get-the-first-address-of-initialized-data-segment
 extern char __bss_start;
+extern void *_end;
 
 int a;
 int b = 48763;
@@ -94,6 +95,46 @@ int main() {
 
     pthread_getattr_np(t3, &thread_attr);
     pthread_attr_getstack(&thread_attr, &t3_stack_addr, &t3_stack_size);
+
+    /*argv, environ address range*/
+    printf("0x%lx <= env_end \n0x%lx <= env_start \n", seg.env_end, seg.env_start);
+    printf("0x%lx <= arg_end \n0x%lx <= arg_start \n\n", seg.arg_end, seg.arg_start);
+
+    /*main stack address range*/
+    printf("0x%lx <= start_stack \n", seg.start_stack);
+
+    register long rbp asm("rbp");
+    printf("%#010lx <= start stack for main thread($RBP)\n", rbp);
+    register long rsp asm("rsp");
+    printf("%#010lx <= end stack for main thread($RSP)\n\n", rsp);
+
+    /*thread stack address range*/
+    printf("%p <= end   stack for thread 1\n", (char *)t1_stack_addr + t1_stack_size);
+    printf("%p <= Start stack for thread 1\n", t1_stack_addr);
+
+    printf("%p <= end   stack for thread 2\n", (char *)t2_stack_addr + t2_stack_size);
+    printf("%p <= start stack for thread 2\n", t2_stack_addr);
+
+    printf("%p <= end   stack for thread 3\n", (char *)t3_stack_addr + t3_stack_size);
+    printf("%p <= start stack for thread 3\n\n", t3_stack_addr);
+
+    /*heap address range*/
+    printf("0x%lx <= end_heap (brk)\n", seg.brk);
+    printf("0x%lx <= start_heap (brk_start)\n\n", seg.start_brk);
+
+    /*bss address range*/
+    printf("%p <= bss_end\n", &_end);
+    printf("%p <= bss_start\n\n", &__bss_start);
+
+    /*data address range*/
+    printf("0x%lx <= data_end\n", seg.end_data);
+    printf("0x%lx <= data_start\n\n", seg.start_data);
+
+    /*code address range*/
+    printf("0x%lx <= code_end\n", seg.end_code);
+    printf("%p <= main function address\n", &main);
+    printf("%p <=  void *child_thread_information(void *data) address\n", child_thread_information);
+    printf("0x%lx <= code_start\n\n", seg.start_code);
 
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
