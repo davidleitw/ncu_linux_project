@@ -37,7 +37,7 @@ struct segment {
     unsigned long arg_start, arg_end, env_start, env_end;
 };
 
-size_t virt_to_phy_vaild(pid_t pid, size_t addr)
+unsigned long virt_to_phy_vaild(pid_t pid, unsigned long addr)
 {
     char str[20];
     sprintf(str, "/proc/%u/pagemap", pid);
@@ -47,8 +47,8 @@ size_t virt_to_phy_vaild(pid_t pid, size_t addr)
         printf("open %s failed!\n", str);
         return 0;
     }
-    size_t pagesize = getpagesize();
-    size_t offset = (addr / pagesize) * sizeof(uint64_t);
+    unsigned long pagesize = getpagesize();
+    unsigned long offset = (addr / pagesize) * sizeof(uint64_t);
     if(lseek(fd, offset, SEEK_SET) < 0)
     {
         printf("lseek() failed!\n");
@@ -68,8 +68,8 @@ size_t virt_to_phy_vaild(pid_t pid, size_t addr)
         close(fd);
         return 0;
     }
-    size_t frame = info & ((((uint64_t)1) << 55) - 1);
-    size_t phy = frame * pagesize + addr % pagesize;
+    unsigned long frame = info & ((((uint64_t)1) << 55) - 1);
+    unsigned long phy = frame * pagesize + addr % pagesize;
     close(fd);
     return phy;
 }
@@ -136,7 +136,7 @@ int main() {
     pthread_create(&t3, NULL, child_thread_information, "3");
     
     void *t1_stack_addr, *t2_stack_addr, *t3_stack_addr;
-    size_t t1_stack_size = 0, t2_stack_size = 0, t3_stack_size = 0;
+    unsigned long t1_stack_size = 0, t2_stack_size = 0, t3_stack_size = 0;
 
     pthread_getattr_np(t1, &thread_attr);
     pthread_attr_getstack(&thread_attr, &t1_stack_addr, &t1_stack_size);
