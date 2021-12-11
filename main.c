@@ -1,8 +1,14 @@
 #define _GNU_SOURCE    //pthread_getattr_np
+#include <fcntl.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <sys/syscall.h>
+
+#define PAGEMAP_LENGTH 8
+#define gettid() syscall(SYS_gettid)
 
 // get the first address of initialized data segment
 // ref: https://stackoverflow.com/questions/33493600/how-to-get-the-first-address-of-initialized-data-segment
@@ -31,7 +37,47 @@ struct segment {
     unsigned long arg_start, arg_end, env_start, env_end;
 };
 
-void *child_thread_information(void *data) {
+unsigned long virt_to_phy_vaild(pid_t pid, unsigned long addr)
+{
+    char str[20];
+    sprintf(str, "/proc/%u/pagemap", pid);
+    int fd = open(str, O_RDONLY);
+    if(fd < 0)
+    {
+        printf("open %s failed!\n", str);
+        return 0;
+    }
+    unsigned long pagesize = getpagesize();
+    unsigned long offset = (addr / pagesize) * sizeof(uint64_t);
+    if(lseek(fd, offset, SEEK_SET) < 0)
+    {
+        printf("lseek() failed!\n");
+        close(fd);
+        return 0;
+    }
+    uint64_t info;
+    if(read(fd, &info, sizeof(uint64_t)) != sizeof(uint64_t))
+    {
+        printf("read() failed!\n");
+        close(fd);
+        return 0;
+    }
+    if((info & (((uint64_t)1) << 63)) == 0)
+    {
+        printf("page is not present!\n");
+        close(fd);
+        return 0;
+    }
+    unsigned long frame = info & ((((uint64_t)1) << 55) - 1);
+    unsigned long phy = frame * pagesize + addr % pagesize;
+    close(fd);
+    return phy;
+}
+
+void *child_thread_information(void *data) 
+{
+    // https://man7.org/linux/man-pages/man2/gettid.2.html
+    pid_t tid = gettid();
     char thread_number = ((char *)data)[0];
 
     int idx;
@@ -61,10 +107,15 @@ void *child_thread_information(void *data) {
         if (thread_number == '1') {
             printf("\n%s\n", msg[idx]);
         }
-        printf("thread-%c: %lx ---> %lx\n", thread_number, vir_addr[idx], phy_addr[idx]);
+        printf("thread-%c: %lx ---> %lx ", thread_number, vir_addr[idx], phy_addr[idx]);
+        if (virt_to_phy_vaild(tid, vir_addr[idx]) == phy_addr[idx]) {
+            printf("Vaildation[O]\n");
+        } else {
+            printf("Vaildation[x]\n");
+        }
         sleep(3);
     }
-
+    sleep(5);
     pthread_exit(NULL);    
 }
 
@@ -85,7 +136,7 @@ int main() {
     pthread_create(&t3, NULL, child_thread_information, "3");
     
     void *t1_stack_addr, *t2_stack_addr, *t3_stack_addr;
-    size_t t1_stack_size = 0, t2_stack_size = 0, t3_stack_size = 0;
+    unsigned long t1_stack_size = 0, t2_stack_size = 0, t3_stack_size = 0;
 
     pthread_getattr_np(t1, &thread_attr);
     pthread_attr_getstack(&thread_attr, &t1_stack_addr, &t1_stack_size);
